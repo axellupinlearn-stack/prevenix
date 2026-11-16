@@ -46,7 +46,7 @@ export interface Article {
   author: string
   read_time: string
   is_published: boolean
-  published_at: string
+  published_at: string | null
   created_at: string
 }
 

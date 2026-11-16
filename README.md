@@ -62,17 +62,20 @@ Accès sécurisé pour permettre à la direction de PREVENIX de gérer 100% du s
 - **Styling :** Tailwind CSS avec palette sur mesure PREVENIX
 - **Icônes :** Lucide React
 - **Persistance des Données :**
-  - **Par défaut :** Moteur local persistant haute performance dans `data/db.json`.
-  - **Supabase Ready :** Script SQL complet fourni dans `supabase/schema.sql` avec politiques de sécurité RLS pour déploiement cloud Supabase.
+  - **Développement local :** Moteur JSON dans `data/db.json`.
+  - **Production/Vercel :** Supabase Postgres pour les paramètres, solutions, articles, devis et messages; Supabase Storage pour les images téléversées.
+  - Le schéma, les politiques RLS et le bucket de stockage sont définis dans `supabase/schema.sql`.
 - **SEO & Performance :** Balises OpenGraph, Twitter Cards, Sitemap XML dynamique (`/sitemap.xml`), Robots.txt (`/robots.txt`) et données structurées JSON-LD `InsuranceAgency`.
 
 ---
 
 ## 💻 Démarrage Rapide
 
-Copiez `.env.example` vers `.env.local` et définissez des valeurs privées pour `ADMIN_SECRET_KEY` (clé aléatoire d'au moins 32 caractères), `ADMIN_DEFAULT_EMAIL` et `ADMIN_DEFAULT_PASSWORD` (au moins 12 caractères). Configurez ces variables dans l'environnement de l'hébergeur; ne publiez jamais `.env.local`. Sans ces trois variables valides, la connexion administrateur est désactivée.
+Pour développer en local, copiez `.env.example` vers `.env.local`. Le stockage JSON local est utilisé en mode développement. Pour Vercel, créez un projet Supabase et exécutez `supabase/schema.sql` dans son éditeur SQL. Ajoutez ensuite dans Vercel (Settings → Environment Variables) les variables `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `ADMIN_SECRET_KEY`, `ADMIN_DEFAULT_EMAIL` et `ADMIN_DEFAULT_PASSWORD`, puis redéployez. La clé `SUPABASE_SERVICE_ROLE_KEY` doit rester secrète et ne jamais porter le préfixe `NEXT_PUBLIC_`.
 
-Les demandes de devis et messages de démonstration contenant des données personnelles ne sont pas inclus dans les nouvelles bases. `data/db.json` et les téléversements de `public/uploads/` sont des données locales/runtime ignorées par Git.
+`ADMIN_SECRET_KEY` doit être une clé aléatoire d'au moins 32 caractères; `ADMIN_DEFAULT_PASSWORD` doit en contenir au moins 12. Sans variables d'administration valides, le Studio reste désactivé. Sans configuration Supabase, le build peut se terminer, mais les API de données de production refusent les opérations au lieu d'écrire dans le système de fichiers éphémère de Vercel.
+
+Les demandes de devis et messages de démonstration contenant des données personnelles ne sont pas inclus dans les nouvelles bases. `data/db.json` et les téléversements locaux de `public/uploads/` sont ignorés par Git; en production, les images sont stockées dans le bucket Supabase `prevenix-uploads`.
 
 ### 1. Démarrer le serveur de développement :
 ```bash

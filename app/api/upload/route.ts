@@ -3,6 +3,7 @@ import fs from 'fs'
 import path from 'path'
 import { randomUUID } from 'crypto'
 import { getAdminSession } from '@/lib/admin-auth'
+import { getSupabaseConfig, uploadToSupabaseStorage } from '@/lib/supabase-rest'
 
 export async function POST(req: NextRequest) {
   if (!getAdminSession(req)) {
@@ -33,20 +34,29 @@ export async function POST(req: NextRequest) {
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
 
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads')
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true })
-    }
-
-    // Clean filename
     const cleanName = `${randomUUID()}${extension}`
-    const filePath = path.join(uploadDir, cleanName)
+    let url: string
+    if (getSupabaseConfig()) {
+      url = await uploadToSupabaseStorage(cleanName, buffer, file.type)
+    } else {
+      if (process.env.NODE_ENV === 'production') {
+        return NextResponse.json(
+          { error: 'Le stockage Supabase doit être configuré avant les téléversements.' },
+          { status: 503 }
+        )
+      }
 
-    fs.writeFileSync(filePath, buffer)
+      const uploadDir = path.join(process.cwd(), 'public', 'uploads')
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true })
+      }
+      fs.writeFileSync(path.join(uploadDir, cleanName), buffer)
+      url = `/uploads/${cleanName}`
+    }
 
     return NextResponse.json({
       success: true,
-      url: `/uploads/${cleanName}`,
+      url,
       name: file.name,
     })
   } catch (err: any) {

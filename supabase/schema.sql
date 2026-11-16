@@ -93,6 +93,12 @@ CREATE TABLE IF NOT EXISTS contact_messages (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
+-- Marqueur empêchant la réinsertion des données initiales après leur suppression.
+CREATE TABLE IF NOT EXISTS app_meta (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL
+);
+
 -- Politiques de Sécurité Row Level Security (RLS)
 ALTER TABLE site_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE insurance_solutions ENABLE ROW LEVEL SECURITY;
@@ -100,6 +106,7 @@ ALTER TABLE articles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE media_gallery ENABLE ROW LEVEL SECURITY;
 ALTER TABLE quote_requests ENABLE ROW LEVEL SECURITY;
 ALTER TABLE contact_messages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE app_meta ENABLE ROW LEVEL SECURITY;
 
 -- Lecture publique pour les éléments du site
 CREATE POLICY "Lecture publique paramètres" ON site_settings FOR SELECT USING (true);
@@ -110,3 +117,13 @@ CREATE POLICY "Lecture publique médias" ON media_gallery FOR SELECT USING (true
 -- Insertion publique pour les formulaires de devis et contact
 CREATE POLICY "Insertion publique devis" ON quote_requests FOR INSERT WITH CHECK (true);
 CREATE POLICY "Insertion publique messages" ON contact_messages FOR INSERT WITH CHECK (true);
+
+-- Stockage public en lecture, alimenté par les routes serveur authentifiées.
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('prevenix-uploads', 'prevenix-uploads', true)
+ON CONFLICT (id) DO UPDATE SET public = true;
+
+DROP POLICY IF EXISTS "Lecture publique des médias PREVENIX" ON storage.objects;
+CREATE POLICY "Lecture publique des médias PREVENIX"
+  ON storage.objects FOR SELECT
+  USING (bucket_id = 'prevenix-uploads');
